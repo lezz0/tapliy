@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>TAPD — Connect</title>
+<title>Tapliy — Connect</title>
 <style>
   :root{
     --bg:#0A0A0B; --surface:#131316; --elevated:#1B1B1F;
@@ -78,7 +78,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="brand">TAPD</div>
+    <div class="brand">Tapliy</div>
 
     <!-- loading / error state -->
     <div id="loading" class="center">Loading…</div>
@@ -86,7 +86,7 @@
     <!-- form -->
     <form id="form" style="display:none">
       <div class="eyebrow">Connect with</div>
-      <h1 id="profileName">a TAPD member</h1>
+      <h1 id="profileName">a Tapliy member</h1>
       <a id="profileLink" class="profileLink" href="#" target="_self">View <span id="profileLinkName">their</span> profile ↗</a>
       <p class="sub">Share your details and <span id="ownerFirst">they</span> will have your contact instantly. Nothing is shared publicly.</p>
 
@@ -105,7 +105,7 @@
 
       <label class="consent">
         <input id="terms" type="checkbox" required />
-        <span>I agree to TAPD's <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Privacy Policy</a> (PDPA).</span>
+        <span>I agree to Tapliy's <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Privacy Policy</a> (PDPA).</span>
       </label>
 
       <label class="consent">
@@ -124,7 +124,7 @@
       <p class="sub" id="doneSub">Your details were sent. Enjoy the event.</p>
     </div>
 
-    <div class="foot">Powered by TAPD</div>
+    <div class="foot">Powered by Tapliy</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -150,7 +150,7 @@
       if(error || !data || !data.length){ fatal("Sorry — this profile wasn't found."); return; }
       const profile = data[0];
       const first = (profile.full_name || "").trim().split(/\s+/)[0] || "they";
-      $("profileName").textContent = profile.full_name || "a TAPD member";
+      $("profileName").textContent = profile.full_name || "a Tapliy member";
       $("ownerFirst").textContent = first;
 
       // Send the visitor back to the profile page they came from, same

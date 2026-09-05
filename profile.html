@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>TAPD — Profile</title>
+<title>Tapliy — Profile</title>
 <!--
   ============================================================================
-  TAPD — public profile template
+  Tapliy — public profile template
   ============================================================================
   A cardholder shares this page when someone taps their NFC card. It's a
   TEMPLATE: no per-person content is hardcoded. Everything customizable lives
@@ -15,7 +15,7 @@
   you might actually want to touch (demo fallback content, CTA behavior).
 
   URL format for a real card:
-    https://lezz0.github.io/tapd1.1/profile.html?u=<username>
+    https://tapliy.com/profile.html?u=<username>
 
   No ?u= param, or the network call fails/times out -> shows DEMO_PROFILE
   below so you can preview the layout without a DB row. Unknown username ->
@@ -23,7 +23,7 @@
 
   "Connect" sends the visitor to connect.html?u=<username> — a lead-capture
   form (see supabase/profile_connect.sql). Whatever they submit there lands
-  in this profile's owner's Contacts in the TAPD app, same as a card tap.
+  in this profile's owner's Contacts in the Tapliy app, same as a card tap.
   "Save contact" stays a client-side .vcf download, no backend involved.
   ============================================================================
 -->
@@ -95,7 +95,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="brand">TAPD</div>
+    <div class="brand">Tapliy</div>
 
     <!-- Shown only in preview/demo/error states, never for a real found profile -->
     <div id="banner" class="banner"></div>
@@ -125,7 +125,7 @@
       </div>
     </div>
 
-    <div class="foot">Powered by TAPD</div>
+    <div class="foot">Powered by Tapliy</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -140,7 +140,7 @@
     // out — lets you preview the layout by just opening the file locally.
     const DEMO_PROFILE = {
       full_name: "Alex Tan",
-      headline: "Product Designer @ TAPD",
+      headline: "Product Designer @ Tapliy",
       bio: "I design for how people actually connect — not just how they collect contacts. Outside work: film photography, hawker food tours, and a very slow attempt at learning guitar.",
       avatar_url: "",
       links: [
@@ -161,7 +161,7 @@
         full_name: "Shay",
         headline: "Police Officer",
         bio: "Police officer with a passion for interior design.",
-        avatar_url: "https://lezz0.github.io/tapd1.1/shay.jpg",
+        avatar_url: "https://tapliy.com/shay.jpg",
         links: [
           { label: "Instagram", url: "https://www.instagram.com/akshaynethan" },
           { label: "LinkedIn", url: "https://sg.linkedin.com/in/akshay-nethan-ambalam-35b503234" },
@@ -175,7 +175,7 @@
         avatar_url: "",
         links: [
           { label: "LinkedIn", url: "https://www.linkedin.com/in/lorenz-nunis-449094259/" },
-          { label: "TAPD", url: "https://lezz0.github.io/tapd1.1/" },
+          { label: "Tapliy", url: "https://tapliy.com/" },
           { label: "Call", url: "tel:+6584443935" },
         ],
       },
@@ -186,7 +186,7 @@
         avatar_url: "",
         links: [
           { label: "LinkedIn", url: "https://sg.linkedin.com/in/gerardtayhy" },
-          { label: "TAPD", url: "https://lezz0.github.io/tapd1.1/" },
+          { label: "Tapliy", url: "https://tapliy.com/" },
           { label: "Call", url: "tel:+6596775566" },
         ],
       },
@@ -204,7 +204,7 @@
     const $ = (id) => document.getElementById(id);
     const params = new URLSearchParams(location.search);
     const username = (params.get("u") || "").trim();
-    // Optional: links this profile back to its TAPD card's lead-capture page
+    // Optional: links this profile back to its Tapliy card's lead-capture page
     // (capture/card.html), so the two pages can jump straight to each other.
     const cardId = (params.get("c") || "").trim();
 
@@ -227,7 +227,7 @@
 
     function renderProfile(p, opts){
       opts = opts || {};
-      const name = p.full_name || "TAPD member";
+      const name = p.full_name || "Tapliy member";
       $("fullName").textContent = name;
 
       $("headline").textContent = p.headline || "";
@@ -271,7 +271,7 @@
 
       // Connect -> a lead-capture form, so whoever's viewing this page can
       // leave their own details for the profile owner. If this profile was
-      // reached via a TAPD card (?c=<cardId> present), send them to that
+      // reached via a Tapliy card (?c=<cardId> present), send them to that
       // card's own capture page (capture/card.html) so both pages point at
       // each other. Otherwise fall back to the username-based form
       // (capture/connect.html) — e.g. a profile shared without a card.
