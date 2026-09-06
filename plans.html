@@ -8,12 +8,16 @@
   ============================================================================
   Tapliy — plans / pricing page
   ============================================================================
-  Tapliy-only page (not part of the legacy tapd1.1 site). Pick a plan +
-  billing period here, then "Choose this plan" sends you to
-  waitlist.html?plan=<id>&billing=<monthly|annual> -- Tapliy is in early
-  access, so this no longer goes straight to order.html/Stripe checkout.
-  That flow is untouched and fully working; flipping the button hrefs back
-  to order.html is the whole "go live" step whenever early access ends.
+  Tapliy-only page (not part of the legacy tapd1.1 site). Early access is
+  Basic-only for now, so there's one shared "Join the waitlist" button above
+  the three tiers (not a per-plan "Choose X" button) -- it always points at
+  waitlist.html?plan=basic&billing=<monthly|annual>, tracking whichever
+  billing toggle is selected. The Professional/Premium cards are shown for
+  reference only, no CTA of their own, until early access opens up to them.
+  This is a temporary state, not the real checkout flow -- that flow
+  (order.html/Stripe) is untouched and fully working; once early access
+  ends, restore each plan's own "Choose X" -> waitlist.html?plan=<id> button
+  (see git history) or point straight back to order.html.
   Forwards a `ref` param through unchanged, if this page was reached via a
   cardholder's lead-discount email (so the waitlist signup keeps that
   attribution).
@@ -75,6 +79,7 @@
     color:#111;border:none;border-radius:12px;padding:14px;font-size:15px;
     font-weight:600;text-decoration:none;cursor:pointer;font-family:inherit}
   .plan.featured .plan-btn{background:var(--accentHi)}
+  #waitlistCta{margin-bottom:28px}
 
   .foot{margin-top:auto;padding-top:36px;color:var(--faint);
     font-family:var(--mono);font-size:11px;letter-spacing:.25em;
@@ -88,6 +93,8 @@
     <div class="eyebrow">Get your card</div>
     <h1>Choose your plan</h1>
     <p class="sub">Every plan includes your personal profile website and access to the Tapliy app. Pick a card tier below.</p>
+
+    <a class="plan-btn" id="waitlistCta" href="waitlist.html?plan=basic&billing=monthly">Join the waitlist</a>
 
     <div class="toggle">
       <button id="btnMonthly" type="button" class="active">Monthly</button>
@@ -170,10 +177,12 @@
           `<div class="plan-price"><span class="amount">${money(price)}</span><span class="period">${period}</span></div>` +
           `<p class="plan-billed">${billedNote}${plan.id === "premium" ? " + prevailing taxes" : ""}</p>` +
           `<p class="plan-desc">${plan.desc}</p>` +
-          `<ul class="features">${plan.features.map((f) => `<li>${f}</li>`).join("")}</ul>` +
-          `<a class="plan-btn" href="waitlist.html?plan=${plan.id}&billing=${billing}${refParam}">Choose ${plan.name}</a>`;
+          `<ul class="features">${plan.features.map((f) => `<li>${f}</li>`).join("")}</ul>`;
         container.appendChild(el);
       });
+      // Early access is Basic-only for now -- the tiers above are shown for
+      // reference, but there's one shared join action, not a per-plan one.
+      $("waitlistCta").href = `waitlist.html?plan=basic&billing=${billing}${refParam}`;
     }
 
     $("btnMonthly").addEventListener("click", () => {
