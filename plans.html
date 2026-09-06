@@ -8,10 +8,15 @@
   ============================================================================
   Tapliy — plans / pricing page
   ============================================================================
-  Tapliy-only page (not part of the legacy tapd1.1 site) -- this is step 1 of
-  checkout: pick a plan + billing period here, then "Choose this plan" sends
-  you to order.html?plan=<id>&billing=<monthly|annual>, which shows a summary
-  of what you picked before asking for profile details + payment.
+  Tapliy-only page (not part of the legacy tapd1.1 site). Pick a plan +
+  billing period here, then "Choose this plan" sends you to
+  waitlist.html?plan=<id>&billing=<monthly|annual> -- Tapliy is in early
+  access, so this no longer goes straight to order.html/Stripe checkout.
+  That flow is untouched and fully working; flipping the button hrefs back
+  to order.html is the whole "go live" step whenever early access ends.
+  Forwards a `ref` param through unchanged, if this page was reached via a
+  cardholder's lead-discount email (so the waitlist signup keeps that
+  attribution).
 
   Prices are real (given by the business owner), not placeholders -- see
   supabase/plans.sql for the record and supabase/functions/
@@ -142,6 +147,8 @@
 
     const $ = (id) => document.getElementById(id);
     let billing = "monthly";
+    const ref = new URLSearchParams(location.search).get("ref");
+    const refParam = ref ? `&ref=${encodeURIComponent(ref)}` : "";
 
     function money(cents){
       return "S$" + (cents / 100).toFixed(2).replace(/\.00$/, "");
@@ -164,7 +171,7 @@
           `<p class="plan-billed">${billedNote}${plan.id === "premium" ? " + prevailing taxes" : ""}</p>` +
           `<p class="plan-desc">${plan.desc}</p>` +
           `<ul class="features">${plan.features.map((f) => `<li>${f}</li>`).join("")}</ul>` +
-          `<a class="plan-btn" href="order.html?plan=${plan.id}&billing=${billing}">Choose ${plan.name}</a>`;
+          `<a class="plan-btn" href="waitlist.html?plan=${plan.id}&billing=${billing}${refParam}">Choose ${plan.name}</a>`;
         container.appendChild(el);
       });
     }
