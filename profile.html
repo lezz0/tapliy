@@ -195,6 +195,7 @@
         headline: "",
         bio: "",
         avatar_url: "",
+        phone: "+65 9071 0083",
         links: [
           { label: "LinkedIn", url: "https://www.linkedin.com/in/mikaelnunis" },
         ],
@@ -265,7 +266,8 @@
       });
       $("linksBlock").style.display = links.length ? "block" : "none";
 
-      // Used by the vCard export below (email/phone pulled out of the links list).
+      // Used by the vCard export below. phoneLink is a fallback for profiles
+      // that put their number in a visible "Call" link instead of p.phone.
       const emailLink = findLink(links, /mail/i) || (p.email ? { url: "mailto:" + p.email } : null);
       const phoneLink = findLink(links, /phone|tel|whatsapp|call/i);
 
@@ -297,7 +299,11 @@
       ];
       if(p.headline) lines.push("TITLE:" + p.headline);
       if(emailLink && emailLink.url) lines.push("EMAIL:" + emailLink.url.replace(/^mailto:/, ""));
-      if(phoneLink && phoneLink.url) lines.push("TEL:" + phoneLink.url.replace(/^tel:/, ""));
+      // p.phone is a dedicated field (not shown as a clickable link on the
+      // page) -- preferred over phoneLink, which comes from a "Call"-style
+      // entry in the visible links list.
+      const phone = p.phone || (phoneLink && phoneLink.url ? phoneLink.url.replace(/^tel:/, "") : null);
+      if(phone) lines.push("TEL:" + phone);
       links.forEach((l) => {
         if(l === emailLink || l === phoneLink) return;
         lines.push("URL;TYPE=" + (l.label || "Link").replace(/[^A-Za-z0-9]/g, "") + ":" + l.url);
