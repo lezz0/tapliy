@@ -85,7 +85,9 @@
       0 0 0 1px rgba(0,0,0,.4) inset;
     will-change:transform;
     cursor:grab;
+    touch-action:none;
   }
+  .card.dragging{cursor:grabbing}
   .card *{transform-style:preserve-3d}
   .card-face{
     position:absolute;inset:0;border-radius:14px;overflow:hidden;
@@ -95,14 +97,6 @@
   .card-face::before{
     content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
     background:repeating-linear-gradient(115deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px);
-  }
-  /* moving light sweep — the signature */
-  .card-sheen{
-    position:absolute;inset:-40%;border-radius:20px;pointer-events:none;
-    background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,var(--sheen,.42)) 48%,transparent 60%);
-    transform:translateX(var(--sx,0)) translateY(var(--sy,0));
-    transition:transform .12s ease-out;
-    mix-blend-mode:screen;
   }
   .card-inner{position:absolute;inset:0;padding:22px 24px;display:flex;flex-direction:column;justify-content:space-between;transform:translateZ(24px)}
   .card-top{display:flex;justify-content:space-between;align-items:flex-start}
@@ -336,7 +330,6 @@
     <div class="card-stage" id="heroStage">
       <div class="card" id="heroCard" data-finish="graphite">
         <div class="card-face"></div>
-        <div class="card-sheen"></div>
         <div class="card-inner">
           <div class="card-top">
             <span class="card-mark">Tapliy</span>
@@ -556,12 +549,12 @@
 (function(){
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- finishes: bg gradient + foreground colour + sheen intensity ---- */
+  /* ---- finishes: bg gradient + foreground colour ---- */
   const FINISHES = {
-    graphite:  {bg:'linear-gradient(135deg,#2A2E34,#14171B)', fg:'#ECEAE4', sheen:.42},
-    obsidian:  {bg:'linear-gradient(135deg,#0E0F12,#25282E)', fg:'#CBA45C', sheen:.30},
-    platinum:  {bg:'linear-gradient(135deg,#DCD9D2,#A7A49B)', fg:'#1A1C20', sheen:.55},
-    champagne: {bg:'linear-gradient(135deg,#CBA868,#8A6E3C)', fg:'#1A1408', sheen:.60}
+    graphite:  {bg:'linear-gradient(135deg,#2A2E34,#14171B)', fg:'#ECEAE4'},
+    obsidian:  {bg:'linear-gradient(135deg,#0E0F12,#25282E)', fg:'#CBA45C'},
+    platinum:  {bg:'linear-gradient(135deg,#DCD9D2,#A7A49B)', fg:'#1A1C20'},
+    champagne: {bg:'linear-gradient(135deg,#CBA868,#8A6E3C)', fg:'#1A1408'}
   };
 
   function applyFinish(card, name){
@@ -569,40 +562,47 @@
     card.dataset.finish = name;
     card.querySelector('.card-face').style.background = f.bg;
     card.style.setProperty('--card-fg', f.fg);
-    card.style.setProperty('--sheen', f.sheen);
     card.querySelectorAll('.nfc path').forEach(p=>p.style.stroke=f.fg);
   }
 
-  /* ---- 3D tilt + parallax sheen ---- */
+  /* ---- free-spin drag: grab the card and rotate it any direction,
+     unbounded (no angle clamp — CSS rotation wraps naturally past 360). ---- */
   function makeTilt(card){
     if(reduce) return;
-    const stage = card.parentElement;
-    let raf=null;
-    function move(e){
-      const r = card.getBoundingClientRect();
-      const px = (e.clientX - r.left)/r.width  - .5;
-      const py = (e.clientY - r.top)/r.height - .5;
-      if(raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(()=>{
-        card.style.transform = `rotateY(${px*18}deg) rotateX(${-py*18}deg) translateZ(6px)`;
-        const sheen = card.querySelector('.card-sheen');
-        sheen.style.setProperty('--sx', (px*90)+'px');
-        sheen.style.setProperty('--sy', (py*90)+'px');
-      });
+    let rotX = 0, rotY = 0;
+    let dragging = false, idle = true, t = 0;
+    let lastX = 0, lastY = 0;
+
+    function apply(){
+      card.style.transform = `rotateY(${rotY}deg) rotateX(${rotX}deg)`;
     }
-    function reset(){
-      card.style.transform = 'rotateY(0) rotateX(0)';
-      const sheen = card.querySelector('.card-sheen');
-      sheen.style.setProperty('--sx','0px'); sheen.style.setProperty('--sy','0px');
-    }
-    stage.addEventListener('mousemove', move);
-    stage.addEventListener('mouseleave', reset);
-    // gentle idle float so it feels alive before interaction
-    let t=0, idle=true;
-    stage.addEventListener('mouseenter', ()=>idle=false);
+
+    card.addEventListener('pointerdown', (e) => {
+      dragging = true; idle = false;
+      lastX = e.clientX; lastY = e.clientY;
+      card.classList.add('dragging');
+      card.setPointerCapture(e.pointerId);
+    });
+    card.addEventListener('pointermove', (e) => {
+      if(!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      rotY += dx * 0.5;
+      rotX -= dy * 0.5;
+      apply();
+    });
+    function endDrag(){ dragging = false; card.classList.remove('dragging'); }
+    card.addEventListener('pointerup', endDrag);
+    card.addEventListener('pointercancel', endDrag);
+
+    // gentle idle float so it feels alive before the first interaction --
+    // stops for good once the visitor takes control, rather than fighting
+    // their rotation afterward.
     (function loop(){
-      if(idle){ t+=0.015;
-        card.style.transform = `rotateY(${Math.sin(t)*7}deg) rotateX(${Math.cos(t*0.8)*4}deg)`;
+      if(idle){
+        t += 0.015;
+        rotY = Math.sin(t)*7; rotX = Math.cos(t*0.8)*4;
+        apply();
       }
       requestAnimationFrame(loop);
     })();
