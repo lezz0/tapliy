@@ -203,7 +203,8 @@
   .tier li::before{content:"";position:absolute;left:0;top:.62em;width:9px;height:1px;background:var(--champagne)}
   .tier .pick{margin-top:auto;text-align:center;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;
     text-transform:uppercase;padding:14px;border:1px solid var(--line);border-radius:3px;color:var(--platinum);
-    transition:background .25s,color .25s;cursor:pointer;background:none}
+    transition:background .25s,color .25s;cursor:pointer;background:none;text-decoration:none;display:block}
+  .tier .price-note{font-family:var(--mono);font-size:.72rem;color:var(--mist-dim);margin:0 0 22px}
   .tier .pick:hover{background:var(--champagne);color:var(--ink);border-color:var(--champagne)}
   .tier.feature .pick{background:var(--champagne);color:var(--ink);border-color:var(--champagne)}
   .tier.feature .pick:hover{background:var(--champagne-hi)}
@@ -395,51 +396,53 @@
 <section id="tiers">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="eyebrow">Three tiers</span>
-      <h2>From plastic to fully bespoke metal.</h2>
-      <p>Same tap, same hosted profile on every tier. The difference is the body and how far you take the design.</p>
+      <span class="eyebrow">Three plans</span>
+      <h2>From plastic to fully custom metal.</h2>
+      <p>Every plan includes your hosted profile website and the Tapliy app. The difference is the card body, the engraving, and how far you take the design. Billed monthly or annually — see <a href="plans.html" style="color:var(--champagne)">full plan details</a>.</p>
     </div>
     <div class="tiers">
       <div class="tier reveal">
         <div class="tier-head"><span class="badge">Plastic</span></div>
-        <h3>Base</h3>
-        <p class="desc">A clean NFC card, no engraving. Load your profile and start tapping.</p>
-        <div class="price">S$15 <small>/ card</small></div>
+        <h3>Basic</h3>
+        <p class="desc">Plastic card with a printed design — no laser engraving.</p>
+        <div class="price">S$3.99 <small>/mo</small></div>
+        <p class="price-note">or S$39.99 billed annually</p>
         <ul>
-          <li>Durable plastic body</li>
-          <li>NFC tap-to-share</li>
-          <li>Hosted profile page</li>
-          <li>No engraving</li>
+          <li>Plastic NFC card, printed design</li>
+          <li>Your personal profile website</li>
+          <li>Access to the Tapliy app</li>
         </ul>
-        <button class="pick">Get the base card</button>
+        <a class="pick" href="order.html?plan=basic&billing=monthly">Choose Basic</a>
       </div>
 
       <div class="tier feature reveal">
         <div class="tier-head"><span class="badge">Most popular</span></div>
-        <h3>Premium</h3>
-        <p class="desc">Solid metal, engraved with a preset layout you choose — name and title, done right.</p>
-        <div class="price">S$30 <small>/ card</small></div>
+        <h3>Professional</h3>
+        <p class="desc">Metal card with your name and title laser-engraved.</p>
+        <div class="price">S$5.99 <small>/mo</small></div>
+        <p class="price-note">or S$59.99 billed annually</p>
         <ul>
-          <li>Solid metal body</li>
-          <li>Choose from preset layouts</li>
-          <li>Name &amp; title engraving</li>
-          <li>Hosted profile page</li>
+          <li>Metal NFC card</li>
+          <li>Name &amp; title laser engraving</li>
+          <li>Your personal profile website</li>
+          <li>Access to the Tapliy app</li>
         </ul>
-        <button class="pick">Pick a preset</button>
+        <a class="pick" href="order.html?plan=professional&billing=monthly">Choose Professional</a>
       </div>
 
       <div class="tier reveal">
         <div class="tier-head"><span class="badge">Metal</span></div>
-        <h3>Custom</h3>
-        <p class="desc">Solid metal, fully bespoke. Bring your own drawing or design and we etch it exactly.</p>
-        <div class="price">S$49+ <small>/ card</small></div>
+        <h3>Premium</h3>
+        <p class="desc">Metal card, laser-engraved, with extra customization.</p>
+        <div class="price">S$9.99 <small>/mo</small></div>
+        <p class="price-note">or S$99 billed annually</p>
         <ul>
-          <li>Solid metal body</li>
-          <li>Fully custom artwork</li>
-          <li>Submit your own design</li>
-          <li>Priority etching</li>
+          <li>Metal NFC card</li>
+          <li>Name &amp; title laser engraving</li>
+          <li>Additional customizable card + website perks</li>
+          <li>Access to the Tapliy app</li>
         </ul>
-        <button class="pick">Go bespoke</button>
+        <a class="pick" href="order.html?plan=premium&billing=monthly">Choose Premium</a>
       </div>
     </div>
   </div>
