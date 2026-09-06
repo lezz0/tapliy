@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Tapliy — Get your card</title>
+<!--
+  ============================================================================
+  Tapliy — card checkout / profile intake
+  ============================================================================
+  A customer buying a card fills this in, then pays via Stripe Checkout.
+  On submit we POST to the create-checkout-session Edge Function, which saves
+  this info as an unpublished draft (see supabase/checkout.sql) and returns a
+  Stripe Checkout URL to redirect to. The stripe-webhook function marks the
+  profile paid once Stripe confirms payment, which is what makes it appear at
+  profile.html?u=<username>. See SETUP.md for the full deploy steps.
+  ============================================================================
+-->
+<style>
+  :root{
+    --bg:#0A0A0B; --surface:#131316; --elevated:#1B1B1F;
+    --text:#F4F3EF; --dim:#8B8B92; --faint:#5A5A60;
+    --line:rgba(255,255,255,.08); --lineStrong:rgba(255,255,255,.16);
+    --accent:#CBA45C; --accentHi:#E7C983; --danger:#E5574B; --success:#5BC08C;
+    --mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:460px;margin:0 auto;min-height:100vh;
+    padding:calc(env(safe-area-inset-top) + 40px) 22px 40px;
+    display:flex;flex-direction:column}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.35em;
+    color:var(--faint);text-transform:uppercase}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.28em;
+    color:var(--accent);text-transform:uppercase;margin:34px 0 10px}
+  h1{font-size:26px;font-weight:600;margin:0 0 6px;line-height:1.2}
+  .sub{color:var(--dim);font-size:15px;margin:0 0 26px;line-height:1.5}
+  label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+  .hint{color:var(--faint);font-size:12.5px;margin:6px 2px 0;line-height:1.4}
+  .field{margin-bottom:18px}
+  input,textarea{width:100%;background:var(--surface);border:1px solid var(--line);
+    color:var(--text);font-size:16px;border-radius:14px;padding:15px 16px;outline:none;
+    font-family:inherit}
+  textarea{resize:vertical;min-height:88px;line-height:1.5}
+  input:focus,textarea:focus{border-color:var(--lineStrong)}
+  input::placeholder,textarea::placeholder{color:var(--faint)}
+  .prefix{display:flex;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:14px;padding:0 16px}
+  .prefix:focus-within{border-color:var(--lineStrong)}
+  .prefix span{color:var(--faint);font-size:16px;padding-right:2px}
+  .prefix input{border:none;background:none;padding:15px 0}
+  button{width:100%;margin-top:10px;background:var(--text);color:#111;
+    border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:600;
+    cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{margin-top:18px;font-size:14px;line-height:1.5;display:none}
+  .msg.err{display:block;color:var(--danger)}
+  .foot{margin-top:auto;padding-top:36px;color:var(--faint);
+    font-family:var(--mono);font-size:11px;letter-spacing:.25em;text-transform:uppercase}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">Tapliy</div>
+
+    <form id="form">
+      <div class="eyebrow">Get your card</div>
+      <h1>Set up your profile</h1>
+      <p class="sub">This is what people will see when they tap your card. You'll pay on the next screen — nothing is charged until then.</p>
+
+      <div class="field">
+        <label for="username">Your link</label>
+        <div class="prefix">
+          <span>tapd.link/</span>
+          <input id="username" type="text" placeholder="yourname" required autocapitalize="off" autocorrect="off" />
+        </div>
+        <p class="hint">Lowercase letters, numbers, hyphens only.</p>
+      </div>
+
+      <div class="field">
+        <label for="fullName">Full name</label>
+        <input id="fullName" type="text" autocomplete="name" placeholder="Your full name" required />
+      </div>
+
+      <div class="field">
+        <label for="headline">Headline</label>
+        <input id="headline" type="text" placeholder="e.g. Product Designer @ Company" />
+      </div>
+
+      <div class="field">
+        <label for="bio">Bio</label>
+        <textarea id="bio" placeholder="A couple of sentences about you"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" autocomplete="tel" placeholder="+65 …" />
+      </div>
+
+      <div class="field">
+        <label for="instagram">Instagram</label>
+        <input id="instagram" type="url" placeholder="https://instagram.com/yourname" />
+      </div>
+
+      <div class="field">
+        <label for="linkedin">LinkedIn</label>
+        <input id="linkedin" type="url" placeholder="https://linkedin.com/in/yourname" />
+      </div>
+
+      <div class="field">
+        <label for="website">Website</label>
+        <input id="website" type="url" placeholder="https://yoursite.com" />
+      </div>
+
+      <button id="submit" type="submit">Continue to payment</button>
+      <div id="err" class="msg"></div>
+    </form>
+
+    <div class="foot">Powered by Tapliy</div>
+  </div>
+
+  <script>
+    // Same project as profile.html / card.html — see supabase/checkout.sql
+    // and supabase/functions/create-checkout-session for what this calls.
+    const SUPABASE_URL  = "https://idoxkgzcamqvknnbnbbp.supabase.co";
+    const SUPABASE_ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlkb3hrZ3pjYW1xdmtubmJuYmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDY0ODUsImV4cCI6MjEwMjEyMjQ4NX0.AD-viN1J9hM9sG0a4Mq8DNcO5YqhMhFhIrOmcHFcEU0";
+    const CHECKOUT_FN_URL = SUPABASE_URL + "/functions/v1/create-checkout-session";
+
+    const $ = (id) => document.getElementById(id);
+
+    function showErr(text){
+      $("err").textContent = text;
+      $("err").className = "msg err";
+    }
+
+    function normalizePhone(raw){
+      const digits = raw.trim();
+      return digits ? digits.replace(/[^\d+]/g, "") : "";
+    }
+
+    $("form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("err").className = "msg";
+
+      const username = $("username").value.trim().toLowerCase();
+      const fullName = $("fullName").value.trim();
+      if(!/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$/.test(username)){
+        showErr("Please enter a valid link (lowercase letters, numbers, hyphens, 3-30 characters).");
+        return;
+      }
+      if(!fullName){
+        showErr("Please enter your name.");
+        return;
+      }
+
+      const links = [];
+      if($("instagram").value.trim()) links.push({ label: "Instagram", url: $("instagram").value.trim() });
+      if($("linkedin").value.trim()) links.push({ label: "LinkedIn", url: $("linkedin").value.trim() });
+      if($("website").value.trim()) links.push({ label: "Website", url: $("website").value.trim() });
+      const phone = normalizePhone($("phone").value);
+      if(phone) links.push({ label: "Call", url: "tel:" + phone });
+
+      $("submit").disabled = true;
+      $("submit").textContent = "Please wait…";
+
+      try{
+        const resp = await fetch(CHECKOUT_FN_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON,
+            "Authorization": "Bearer " + SUPABASE_ANON,
+          },
+          body: JSON.stringify({
+            username,
+            full_name: fullName,
+            headline: $("headline").value.trim(),
+            bio: $("bio").value.trim(),
+            links,
+          }),
+        });
+        const data = await resp.json();
+        if(!resp.ok || !data.url){
+          throw new Error(data.error || "Something went wrong. Please try again.");
+        }
+        window.location.href = data.url;
+      } catch(err){
+        showErr(err.message || "Something went wrong. Please try again.");
+        $("submit").disabled = false;
+        $("submit").textContent = "Continue to payment";
+      }
+    });
+  </script>
+</body>
+</html>
