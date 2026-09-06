@@ -43,7 +43,7 @@
     padding:calc(env(safe-area-inset-top) + 40px) 22px 40px;
     display:flex;flex-direction:column}
   .brand{font-family:var(--mono);font-size:12px;letter-spacing:.35em;
-    color:var(--faint);text-transform:uppercase}
+    color:var(--faint);text-transform:uppercase;text-decoration:none;display:inline-block}
   .banner{margin-top:18px;padding:10px 14px;border:1px solid var(--line);
     border-radius:12px;font-size:12px;line-height:1.5;color:var(--dim);
     background:var(--surface);display:none}
@@ -95,7 +95,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="brand">Tapliy</div>
+    <a href="index.html" class="brand">Tapliy</a>
 
     <!-- Shown only in preview/demo/error states, never for a real found profile -->
     <div id="banner" class="banner"></div>
