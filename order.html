@@ -128,18 +128,19 @@
       </div>
 
       <div class="field">
-        <label for="instagram">Instagram</label>
-        <input id="instagram" type="url" placeholder="https://instagram.com/yourname" />
+        <label for="link1">Link 1</label>
+        <input id="link1" type="url" placeholder="e.g. https://linkedin.com/in/yourname" />
       </div>
 
       <div class="field">
-        <label for="linkedin">LinkedIn</label>
-        <input id="linkedin" type="url" placeholder="https://linkedin.com/in/yourname" />
+        <label for="link2">Link 2</label>
+        <input id="link2" type="url" placeholder="e.g. https://instagram.com/yourname" />
       </div>
 
       <div class="field">
-        <label for="website">Website</label>
-        <input id="website" type="url" placeholder="https://yoursite.com" />
+        <label for="link3">Link 3</label>
+        <input id="link3" type="url" placeholder="e.g. https://yourownwebsite.com" />
+        <p class="hint">Any link — social profile, website, portfolio, whatever you'd like people to see.</p>
       </div>
 
       <button id="submit" type="submit">Continue to payment</button>
@@ -193,6 +194,26 @@
       return digits ? digits.replace(/[^\d+]/g, "") : "";
     }
 
+    // Link slots are generic (not tied to a specific platform) -- guess a
+    // clean display label from the URL itself so the profile page still
+    // shows something readable like "LinkedIn" instead of "Link 1".
+    const KNOWN_HOSTS = {
+      "instagram.com": "Instagram", "linkedin.com": "LinkedIn",
+      "twitter.com": "Twitter", "x.com": "X", "facebook.com": "Facebook",
+      "tiktok.com": "TikTok", "youtube.com": "YouTube", "github.com": "GitHub",
+      "threads.net": "Threads", "wa.me": "WhatsApp", "whatsapp.com": "WhatsApp",
+      "calendly.com": "Calendly", "behance.net": "Behance", "dribbble.com": "Dribbble",
+      "medium.com": "Medium",
+    };
+    function detectLabel(url){
+      try{
+        const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+        return KNOWN_HOSTS[host] || host;
+      } catch {
+        return "Link";
+      }
+    }
+
     $("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       $("err").className = "msg";
@@ -209,9 +230,10 @@
       }
 
       const links = [];
-      if($("instagram").value.trim()) links.push({ label: "Instagram", url: $("instagram").value.trim() });
-      if($("linkedin").value.trim()) links.push({ label: "LinkedIn", url: $("linkedin").value.trim() });
-      if($("website").value.trim()) links.push({ label: "Website", url: $("website").value.trim() });
+      ["link1", "link2", "link3"].forEach((id) => {
+        const url = $(id).value.trim();
+        if(url) links.push({ label: detectLabel(url), url });
+      });
       const phone = normalizePhone($("phone").value);
       if(phone) links.push({ label: "Call", url: "tel:" + phone });
 
