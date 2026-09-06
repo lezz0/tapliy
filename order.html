@@ -6,14 +6,23 @@
 <title>Tapliy — Get your card</title>
 <!--
   ============================================================================
-  Tapliy — card checkout / profile intake
+  Tapliy — card checkout / profile intake (step 2 of 2)
   ============================================================================
+  Step 1 is plans.html (pick a plan + billing period). This page requires
+  ?plan=<basic|professional|premium>&billing=<monthly|annual> in the URL --
+  redirects back to plans.html if either is missing/invalid, so nobody lands
+  here without having chosen a plan first.
+
   A customer buying a card fills this in, then pays via Stripe Checkout.
   On submit we POST to the create-checkout-session Edge Function, which saves
   this info as an unpublished draft (see supabase/checkout.sql) and returns a
   Stripe Checkout URL to redirect to. The stripe-webhook function marks the
   profile paid once Stripe confirms payment, which is what makes it appear at
   profile.html?u=<username>. See SETUP.md for the full deploy steps.
+
+  Plan names/prices shown here are display-only, kept in sync by hand with
+  plans.html (display) and supabase/functions/create-checkout-session (what's
+  actually charged) -- see supabase/plans.sql for the real numbers.
   ============================================================================
 -->
 <style>
@@ -60,21 +69,39 @@
   .msg.err{display:block;color:var(--danger)}
   .foot{margin-top:auto;padding-top:36px;color:var(--faint);
     font-family:var(--mono);font-size:11px;letter-spacing:.25em;text-transform:uppercase}
+
+  .planSummary{background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px;margin-bottom:28px}
+  .planSummary-top{display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:4px}
+  .planSummary-name{font-size:16px;font-weight:700}
+  .planSummary-price{font-size:15px;font-weight:600;color:var(--accentHi)}
+  .planSummary-desc{color:var(--dim);font-size:13.5px;line-height:1.4;margin:0 0 8px}
+  .planSummary a{color:var(--accentHi);font-size:12.5px;text-decoration:underline}
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="brand">Tapliy</div>
 
-    <form id="form">
-      <div class="eyebrow">Get your card</div>
-      <h1>Set up your profile</h1>
-      <p class="sub">This is what people will see when they tap your card. You'll pay on the next screen — nothing is charged until then.</p>
+    <div class="eyebrow">Get your card</div>
+    <h1>Complete your profile</h1>
+    <p class="sub">This is what people will see when they tap your card. You'll pay on the next screen — nothing is charged until then.</p>
 
+    <div class="planSummary" id="planSummary">
+      <div class="planSummary-top">
+        <span class="planSummary-name" id="planName"></span>
+        <span class="planSummary-price" id="planPrice"></span>
+      </div>
+      <p class="planSummary-desc" id="planDesc"></p>
+      <a href="plans.html">Change plan</a>
+    </div>
+
+    <form id="form">
       <div class="field">
         <label for="username">Your link</label>
         <div class="prefix">
-          <span>tapd.link/</span>
+          <span>tapliy.com/</span>
           <input id="username" type="text" placeholder="yourname" required autocapitalize="off" autocorrect="off" />
         </div>
         <p class="hint">Lowercase letters, numbers, hyphens only.</p>
@@ -129,7 +156,32 @@
     const SUPABASE_ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlkb3hrZ3pjYW1xdmtubmJuYmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDY0ODUsImV4cCI6MjEwMjEyMjQ4NX0.AD-viN1J9hM9sG0a4Mq8DNcO5YqhMhFhIrOmcHFcEU0";
     const CHECKOUT_FN_URL = SUPABASE_URL + "/functions/v1/create-checkout-session";
 
+    // Display-only -- kept in sync by hand with plans.html and the real
+    // prices in supabase/functions/create-checkout-session.
+    const PLANS = {
+      basic:        { name: "Basic",        monthly: 399, annual: 3999, desc: "Plastic card with a printed design (no laser engraving)." },
+      professional: { name: "Professional", monthly: 599, annual: 5999, desc: "Metal card with your name and title laser-engraved." },
+      premium:      { name: "Premium",      monthly: 999, annual: 9900, desc: "Metal card, laser-engraved, with extra customization." },
+    };
+
     const $ = (id) => document.getElementById(id);
+    const params = new URLSearchParams(location.search);
+    const plan = params.get("plan");
+    const billing = params.get("billing");
+
+    // No valid plan chosen yet (e.g. someone bookmarked/shared this link, or
+    // typed the URL directly) -- send them to pick one first instead of
+    // showing a bare intake form.
+    if(!PLANS[plan] || (billing !== "monthly" && billing !== "annual")){
+      location.href = "plans.html";
+    } else {
+      const p = PLANS[plan];
+      const price = billing === "monthly" ? p.monthly : p.annual;
+      const period = billing === "monthly" ? "/mo" : "/yr";
+      $("planName").textContent = p.name;
+      $("planPrice").textContent = "S$" + (price / 100).toFixed(2).replace(/\.00$/, "") + period;
+      $("planDesc").textContent = p.desc;
+    }
 
     function showErr(text){
       $("err").textContent = text;
@@ -176,6 +228,8 @@
           },
           body: JSON.stringify({
             username,
+            plan,
+            billing,
             full_name: fullName,
             headline: $("headline").value.trim(),
             bio: $("bio").value.trim(),
