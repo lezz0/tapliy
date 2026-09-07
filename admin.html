@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tapliy · Admin</title>
+    <style>
+      :root {
+        --bg: #0a0a0b;
+        --surface: #131316;
+        --elevated: #1b1b1f;
+        --text: #f4f3ef;
+        --dim: #8b8b92;
+        --faint: #5a5a60;
+        --line: rgba(255, 255, 255, 0.08);
+        --accent: #cba45c;
+        --danger: #e5574b;
+        --success: #5bc08c;
+        --mono: ui-monospace, Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand { letter-spacing: 5px; font-weight: 600; }
+      .brand small { color: var(--faint); letter-spacing: 2px; font-family: var(--mono); font-size: 10px; display: block; margin-top: 4px; letter-spacing: 3px; }
+      .wrap { max-width: 860px; margin: 0 auto; padding: 24px; }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+      label { display: block; color: var(--dim); font-size: 11px; letter-spacing: 1.5px; font-family: var(--mono); margin: 12px 0 6px; text-transform: uppercase; }
+      input {
+        width: 100%;
+        background: var(--elevated);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--text);
+        font-size: 15px;
+        padding: 12px 14px;
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 11px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .primary { background: var(--text); color: var(--bg); }
+      .approve { background: var(--success); color: #06210f; }
+      .reject { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+      .ghost { background: transparent; color: var(--dim); border: 1px solid var(--line); }
+      .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .req-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .pill { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; color: var(--accent); }
+      .muted { color: var(--dim); font-size: 13px; }
+      .field-change { font-family: var(--mono); font-size: 13px; margin-top: 10px; }
+      .field-change .from { color: var(--faint); text-decoration: line-through; }
+      .field-change .to { color: var(--accent); }
+      .note { color: var(--dim); font-size: 13px; margin-top: 8px; font-style: italic; }
+      .err { color: var(--danger); font-size: 13px; margin-top: 10px; }
+      .ok { color: var(--success); font-size: 13px; margin-top: 10px; }
+      .hidden { display: none; }
+      h2 { font-size: 15px; font-weight: 600; margin: 6px 0 16px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; font-family: var(--mono); }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">TAPLIY<small>INTERNAL · ADMIN</small></div>
+      <button id="signOutBtn" class="ghost hidden">Sign out</button>
+    </header>
+
+    <div class="wrap">
+      <!-- Config + sign-in -->
+      <section id="authSection">
+        <div class="card">
+          <h2>Connect</h2>
+          <label>Supabase URL</label>
+          <input id="cfgUrl" placeholder="https://xxxx.supabase.co" />
+          <label>Supabase anon key</label>
+          <input id="cfgKey" placeholder="eyJhbGciOi..." />
+          <label>Admin email</label>
+          <input id="email" type="email" placeholder="you@tapd.sg" />
+          <label>Password</label>
+          <input id="password" type="password" placeholder="••••••••" />
+          <div class="row" style="margin-top: 16px">
+            <button id="signInBtn" class="primary">Sign in</button>
+            <span class="muted">Account must have <code>role = 'admin'</code>.</span>
+          </div>
+          <div id="authMsg"></div>
+        </div>
+      </section>
+
+      <!-- Waitlist -->
+      <section id="waitlistSection" class="hidden">
+        <div class="row" style="justify-content: space-between; margin-bottom: 8px">
+          <h2 style="margin: 0">Waitlist</h2>
+          <button id="waitlistRefreshBtn" class="ghost">Refresh</button>
+        </div>
+        <div id="waitlistList"></div>
+        <div id="waitlistMsg"></div>
+      </section>
+
+      <!-- Requests -->
+      <section id="listSection" class="hidden">
+        <div class="row" style="justify-content: space-between; margin-bottom: 8px">
+          <h2 style="margin: 0">Pending change requests</h2>
+          <button id="refreshBtn" class="ghost">Refresh</button>
+        </div>
+        <div id="list"></div>
+        <div id="listMsg"></div>
+      </section>
+    </div>
+
+    <script type="module">
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+      const $ = (id) => document.getElementById(id);
+      const LS = { url: "tapd_sb_url", key: "tapd_sb_key" };
+      let supabase = null;
+
+      // Restore saved config
+      // Both are already public -- shipped in every page's source across
+      // the site -- so pre-filling them just saves every admin a step; the
+      // real gate is signing in with an admin account, not knowing these.
+      const DEFAULT_URL = "https://idoxkgzcamqvknnbnbbp.supabase.co";
+      const DEFAULT_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlkb3hrZ3pjYW1xdmtubmJuYmJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NDY0ODUsImV4cCI6MjEwMjEyMjQ4NX0.AD-viN1J9hM9sG0a4Mq8DNcO5YqhMhFhIrOmcHFcEU0";
+      $("cfgUrl").value = localStorage.getItem(LS.url) || DEFAULT_URL;
+      $("cfgKey").value = localStorage.getItem(LS.key) || DEFAULT_KEY;
+
+      function makeClient() {
+        const url = $("cfgUrl").value.trim();
+        const key = $("cfgKey").value.trim();
+        if (!url || !key) throw new Error("Enter the Supabase URL and anon key.");
+        localStorage.setItem(LS.url, url);
+        localStorage.setItem(LS.key, key);
+        return createClient(url, key);
+      }
+
+      async function showApp(session) {
+        $("authSection").classList.add("hidden");
+        $("waitlistSection").classList.remove("hidden");
+        $("listSection").classList.remove("hidden");
+        $("signOutBtn").classList.remove("hidden");
+        await Promise.all([loadWaitlist(), loadRequests()]);
+      }
+      function showAuth() {
+        $("authSection").classList.remove("hidden");
+        $("waitlistSection").classList.add("hidden");
+        $("listSection").classList.add("hidden");
+        $("signOutBtn").classList.add("hidden");
+      }
+
+      $("signInBtn").onclick = async () => {
+        $("authMsg").textContent = "";
+        try {
+          supabase = makeClient();
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: $("email").value.trim(),
+            password: $("password").value,
+          });
+          if (error) throw error;
+          await showApp(data.session);
+        } catch (e) {
+          $("authMsg").innerHTML = '<div class="err">' + escapeHtml(e.message) + "</div>";
+        }
+      };
+
+      $("signOutBtn").onclick = async () => {
+        if (supabase) await supabase.auth.signOut();
+        showAuth();
+      };
+
+      $("refreshBtn").onclick = () => loadRequests();
+      $("waitlistRefreshBtn").onclick = () => loadWaitlist();
+
+      async function loadWaitlist() {
+        $("waitlistMsg").textContent = "";
+        $("waitlistList").innerHTML = '<p class="muted">Loading…</p>';
+        // RLS only returns rows to an admin (waitlist_select_admin).
+        const { data, error } = await supabase
+          .from("waitlist")
+          .select("id, name, email, plan, billing_interval, referred_by, status, created_at")
+          .eq("status", "pending")
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          $("waitlistList").innerHTML = "";
+          $("waitlistMsg").innerHTML =
+            '<div class="err">' +
+            escapeHtml(error.message) +
+            " — is this account an admin? (Set <code>role='admin'</code> on its profiles row.)</div>";
+          return;
+        }
+        if (!data.length) {
+          $("waitlistList").innerHTML = '<p class="muted">No pending waitlist signups.</p>';
+          return;
+        }
+        $("waitlistList").innerHTML = data.map(renderWaitlistRow).join("");
+        data.forEach((w) => {
+          $("wapprove_" + w.id).onclick = () => approveWaitlist(w.id);
+          $("wreject_" + w.id).onclick = () => setWaitlistStatus(w.id, "declined");
+        });
+      }
+
+      function renderWaitlistRow(w) {
+        const when = new Date(w.created_at).toLocaleString();
+        const PLAN_NAMES = { basic: "Basic", professional: "Professional", premium: "Premium" };
+        const plan = w.plan
+          ? escapeHtml(PLAN_NAMES[w.plan] || w.plan) + (w.billing_interval ? " · " + escapeHtml(w.billing_interval) : "")
+          : "no plan picked";
+        return `
+          <div class="card" id="wrow_${w.id}">
+            <div class="req-head">
+              <div>
+                <strong>${escapeHtml(w.name)}</strong>
+                <div class="muted">${escapeHtml(w.email)} · ${plan} · ${when}</div>
+              </div>
+              <span class="pill">${escapeHtml(w.status)}</span>
+            </div>
+            ${w.referred_by ? `<div class="note">Referred by "${escapeHtml(w.referred_by)}"</div>` : ""}
+            <div class="row" style="margin-top:14px">
+              <button class="approve" id="wapprove_${w.id}">Approve &amp; invite</button>
+              <button class="reject" id="wreject_${w.id}">Reject</button>
+            </div>
+          </div>`;
+      }
+
+      // Creating the actual login needs the service-role key, which this
+      // static page can never safely hold -- so Approve calls an Edge
+      // Function (invite-waitlist-entry) that does that one privileged step,
+      // after re-checking this session is really an admin.
+      async function approveWaitlist(id) {
+        const row = $("wrow_" + id);
+        const btn = $("wapprove_" + id);
+        btn.disabled = true;
+        btn.textContent = "Sending invite…";
+        $("waitlistMsg").textContent = "";
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData?.session?.access_token;
+          const url = $("cfgUrl").value.trim().replace(/\/$/, "");
+          const resp = await fetch(url + "/functions/v1/invite-waitlist-entry", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + token,
+              apikey: $("cfgKey").value.trim(),
+            },
+            body: JSON.stringify({ waitlist_id: id }),
+          });
+          if (!resp.ok) {
+            throw new Error((await resp.text()) || "Request failed (" + resp.status + ")");
+          }
+          if (row) {
+            row.style.opacity = "0.4";
+            row.querySelector(".row").innerHTML = '<span class="ok">Invite sent.</span>';
+            setTimeout(() => row.remove(), 900);
+          }
+        } catch (e) {
+          $("waitlistMsg").innerHTML = '<div class="err">' + escapeHtml(e.message) + "</div>";
+          btn.disabled = false;
+          btn.textContent = "Approve & invite";
+        }
+      }
+
+      async function setWaitlistStatus(id, status) {
+        const { error } = await supabase.from("waitlist").update({ status }).eq("id", id);
+        const row = $("wrow_" + id);
+        if (error) {
+          $("waitlistMsg").innerHTML = '<div class="err">' + escapeHtml(error.message) + "</div>";
+          return;
+        }
+        if (row) {
+          row.style.opacity = "0.4";
+          row.querySelector(".row").innerHTML = '<span class="err">Marked ' + status + ".</span>";
+          setTimeout(() => row.remove(), 900);
+        }
+      }
+
+      async function loadRequests() {
+        $("listMsg").textContent = "";
+        $("list").innerHTML = '<p class="muted">Loading…</p>';
+        // RLS only returns rows to an admin (see is_admin() + cr_select_admin).
+        const { data, error } = await supabase
+          .from("change_requests")
+          .select(
+            "id, field, from_value, to_value, note, status, created_at, card:card_id ( name, url ), requester:requested_by ( name, email )"
+          )
+          .eq("status", "pending")
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          $("list").innerHTML = "";
+          $("listMsg").innerHTML =
+            '<div class="err">' +
+            escapeHtml(error.message) +
+            " — is this account an admin? (Set <code>role='admin'</code> on its profiles row.)</div>";
+          return;
+        }
+        if (!data.length) {
+          $("list").innerHTML = '<p class="muted">No pending requests. 🎉</p>';
+          return;
+        }
+        $("list").innerHTML = data.map(renderRequest).join("");
+        data.forEach((r) => {
+          $("approve_" + r.id).onclick = () => setStatus(r.id, "approved");
+          $("reject_" + r.id).onclick = () => setStatus(r.id, "rejected");
+        });
+      }
+
+      function renderRequest(r) {
+        const who = r.requester
+          ? escapeHtml(r.requester.name || r.requester.email || "Unknown")
+          : "Unknown";
+        const card = r.card ? escapeHtml(r.card.name || "") : "";
+        const when = new Date(r.created_at).toLocaleString();
+        return `
+          <div class="card" id="row_${r.id}">
+            <div class="req-head">
+              <div>
+                <strong>${who}</strong>
+                <div class="muted">${card} · field: <code>${escapeHtml(r.field)}</code> · ${when}</div>
+              </div>
+              <span class="pill">${escapeHtml(r.status)}</span>
+            </div>
+            <div class="field-change">
+              <span class="from">${escapeHtml(r.from_value || "—")}</span>
+              &nbsp;→&nbsp;
+              <span class="to">${escapeHtml(r.to_value || "—")}</span>
+            </div>
+            ${r.note ? `<div class="note">“${escapeHtml(r.note)}”</div>` : ""}
+            <div class="row" style="margin-top:14px">
+              <button class="approve" id="approve_${r.id}">Approve</button>
+              <button class="reject" id="reject_${r.id}">Reject</button>
+            </div>
+          </div>`;
+      }
+
+      async function setStatus(id, status) {
+        const { error } = await supabase
+          .from("change_requests")
+          .update({ status })
+          .eq("id", id);
+        const row = $("row_" + id);
+        if (error) {
+          $("listMsg").innerHTML = '<div class="err">' + escapeHtml(error.message) + "</div>";
+          return;
+        }
+        // Remove from the pending list with a tiny confirmation.
+        if (row) {
+          row.style.opacity = "0.4";
+          row.querySelector(".row").innerHTML =
+            '<span class="' + (status === "approved" ? "ok" : "err") + '">Marked ' + status + ".</span>";
+          setTimeout(() => row.remove(), 900);
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+        })[c]);
+      }
+
+      // Auto-restore an existing session if config is already saved.
+      (async () => {
+        if ($("cfgUrl").value && $("cfgKey").value) {
+          try {
+            supabase = createClient($("cfgUrl").value, $("cfgKey").value);
+            const { data } = await supabase.auth.getSession();
+            if (data.session) await showApp(data.session);
+          } catch {
+            /* stay on auth screen */
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
