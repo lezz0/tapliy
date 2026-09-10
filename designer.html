@@ -147,6 +147,7 @@ body { background: var(--black); color: var(--white); font-family: 'DM Sans', sa
 }
 .card-preview:hover { transform: rotateY(0deg) rotateX(0deg); }
 .card-canvas-svg { position:absolute; inset:0; width:100%; height:100%; }
+.photo-preview { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:none; z-index:3; }
 .card-overlay-text {
   position:absolute; inset:0; pointer-events:none;
 }
@@ -470,6 +471,97 @@ body { background: var(--black); color: var(--white); font-family: 'DM Sans', sa
             </div>
           </div>
 
+          <div class="preset-item" onclick="selectPreset('photo-am')" data-id="photo-am">
+            <div class="preset-thumb">
+              <img src="designs/am-mark.png" alt="AM Monogram" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">AM Monogram</div>
+              <div class="preset-desc">Corner bracket + initials mark</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-split')" data-id="photo-split">
+            <div class="preset-thumb">
+              <img src="designs/split-panel.png" alt="Split Panel" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Split Panel</div>
+              <div class="preset-desc">Dual-tone panel with pin detail</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-halftone')" data-id="photo-halftone">
+            <div class="preset-thumb">
+              <img src="designs/halftone-dots.png" alt="Halftone Fade" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Halftone Fade</div>
+              <div class="preset-desc">Dot gradient, corner accent</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-radial')" data-id="photo-radial">
+            <div class="preset-thumb">
+              <img src="designs/radial-burst.png" alt="Radial Burst" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Radial Burst</div>
+              <div class="preset-desc">Fine lines from a corner pin</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-topo')" data-id="photo-topo">
+            <div class="preset-thumb">
+              <img src="designs/topographic.png" alt="Topographic" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Topographic</div>
+              <div class="preset-desc">Contour lines along the edge</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-frame')" data-id="photo-frame">
+            <div class="preset-thumb">
+              <img src="designs/corner-frame.png" alt="Corner Frame" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Corner Frame</div>
+              <div class="preset-desc">Outline frame with pin terminals</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-dash')" data-id="photo-dash">
+            <div class="preset-thumb">
+              <img src="designs/tapered-dash.png" alt="Tapered Dash" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Tapered Dash</div>
+              <div class="preset-desc">Equalizer-style dash marks</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-diagonal')" data-id="photo-diagonal">
+            <div class="preset-thumb">
+              <img src="designs/diagonal-brush.png" alt="Diagonal Brush" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Diagonal Brush</div>
+              <div class="preset-desc">Brushed texture, angled split</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+          <div class="preset-item" onclick="selectPreset('photo-goldwave')" data-id="photo-goldwave">
+            <div class="preset-thumb">
+              <img src="designs/gold-border-wave.jpeg" alt="Gold Wave" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">
+            </div>
+            <div class="preset-info">
+              <div class="preset-name">Gold Wave</div>
+              <div class="preset-desc">Gold border, wave divider</div>
+              <span class="preset-tag">New</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -518,8 +610,10 @@ body { background: var(--black); color: var(--white); font-family: 'DM Sans', sa
               <circle cx="0" cy="0" r="2" fill="#c9a84c"/>
             </g>
           </svg>
+          <!-- Photo-based design preview (real uploaded card renders) -->
+          <img class="photo-preview" id="photoPreview" alt="Card design preview">
           <!-- Text overlay -->
-          <div class="card-overlay-text">
+          <div class="card-overlay-text" id="cardOverlayText">
             <div class="card-chip-display" id="chipDisplay">
               <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
             </div>
@@ -530,7 +624,7 @@ body { background: var(--black); color: var(--white); font-family: 'DM Sans', sa
           </div>
         </div>
       </div>
-      <div class="canvas-hint">Hover to flatten · Scroll sidebar to explore presets</div>
+      <div class="canvas-hint" id="canvasHint">Hover to flatten · Scroll sidebar to explore presets</div>
     </div>
 
     <!-- Right panel -->
@@ -824,12 +918,44 @@ function setCardColor(c) {
   applyCardVisuals();
 }
 
+// Real uploaded card renders -- pre-made mockups, not live-text templates like
+// the SVG presets above. Selecting one shows the actual photo instead of the
+// SVG card, since we can't dynamically re-render baked-in artwork/text.
+const PHOTO_DESIGNS = {
+  'photo-am': 'designs/am-mark.png',
+  'photo-split': 'designs/split-panel.png',
+  'photo-halftone': 'designs/halftone-dots.png',
+  'photo-radial': 'designs/radial-burst.png',
+  'photo-topo': 'designs/topographic.png',
+  'photo-frame': 'designs/corner-frame.png',
+  'photo-dash': 'designs/tapered-dash.png',
+  'photo-diagonal': 'designs/diagonal-brush.png',
+  'photo-goldwave': 'designs/gold-border-wave.jpeg',
+};
+
 function selectPreset(id) {
   currentPreset = id;
   document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
   document.querySelector(`[data-id="${id}"]`).classList.add('active');
   document.getElementById('specDesign').textContent = document.querySelector(`[data-id="${id}"] .preset-name`).textContent;
-  applyCardVisuals();
+
+  const hint = document.getElementById('canvasHint');
+  if (PHOTO_DESIGNS[id]) {
+    document.getElementById('cardDesignSvg').style.display = 'none';
+    document.getElementById('cardOverlayText').style.display = 'none';
+    const img = document.getElementById('photoPreview');
+    img.src = PHOTO_DESIGNS[id];
+    img.style.display = 'block';
+    document.getElementById('specMaterial').textContent = 'Metal, engraved';
+    document.getElementById('specFinish').textContent = 'As pictured';
+    hint.textContent = 'Sample render shown with placeholder text -- your name & title will be engraved to match this style.';
+  } else {
+    document.getElementById('cardDesignSvg').style.display = '';
+    document.getElementById('cardOverlayText').style.display = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    hint.textContent = 'Hover to flatten \u00b7 Scroll sidebar to explore presets';
+    applyCardVisuals();
+  }
 }
 
 function applyCardVisuals() {
